@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新华三小贝优选产品选型工具</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/github.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <a class="repository-home" href="../index.html">‹ 返回助手首页</a>
+      <div class="eyebrow">H3C · 小贝优选</div>
+      <h1>小贝优选产品选型工具</h1>
+      <p>参数识别、条件筛选、型号对比与配件推荐</p>
+    </div>
+    <div class="database-status" id="databaseStatus">正在加载产品数据库…</div>
+  </header>
+
+  <main class="app-shell">
+    <section class="panel input-panel">
+      <div class="section-title">
+        <div><span class="step">01</span><h2>输入需求</h2></div>
+        <button type="button" class="secondary-button" id="exampleButton">填入示例</button>
+      </div>
+      <textarea id="tenderText" rows="6" placeholder="例如：24口千兆三层交换机，4个万兆光口，交换容量不低于672Gbps，包转发率不低于171Mpps，支持PoE+，预算3000元。"></textarea>
+      <div class="input-actions">
+        <label>产品大类
+          <select id="category">
+            <option value="auto">自动识别</option>
+            <option>路由器/网关</option>
+            <option>交换机</option>
+            <option>无线AP</option>
+            <option>安防网络</option>
+            <option>配件与模块</option>
+          </select>
+        </label>
+        <button type="button" class="primary-button" id="parseButton">识别参数</button>
+      </div>
+    </section>
+
+    <section class="panel criteria-panel">
+      <div class="section-title">
+        <div><span class="step">02</span><h2>确认筛选条件</h2></div>
+        <span class="hint">留空即不参与筛选</span>
+      </div>
+      <div class="common-grid">
+        <label>产品小类<select id="subtype"><option value="">不限</option></select></label>
+        <label>型号或关键词<input id="keyword" placeholder="如：US528、云管、机架式"></label>
+        <label>最高指导价（元）<input id="maxPrice" type="number" min="0" step="1"></label>
+      </div>
+
+      <div id="routerCriteria" class="criteria-grid hidden">
+        <label>最低带机量<input id="routerUsers" type="number" min="0" step="1"></label>
+        <label>最低推荐带宽（Gbps）<input id="routerBandwidth" type="number" min="0" step="0.1"></label>
+        <label>最低AP管理数量<input id="routerApCount" type="number" min="0" step="1"></label>
+        <label>端口要求<input id="routerPorts" placeholder="如：8个千兆电口、1个2.5G口"></label>
+        <label class="checkbox-label"><input id="routerPoe" type="checkbox"> 必须支持PoE供电</label>
+      </div>
+
+      <div id="switchCriteria" class="criteria-grid hidden">
+        <label>管理类型<select id="managed"><option value="">不限</option><option>非网管</option><option>云管/极简管理</option><option>网管</option></select></label>
+        <label>网络层级<select id="layer"><option value="">不限</option><option>二层</option><option>三层</option></select></label>
+        <label>交换容量下限（Gbps）<input id="switchCapacity" type="number" min="0" step="0.01"></label>
+        <label>包转发率下限（Mpps）<input id="switchForwarding" type="number" min="0" step="0.01"></label>
+        <label>端口要求<input id="switchPorts" placeholder="如：24个千兆电口、4个万兆光口"></label>
+        <label>PoE等级<select id="poeGrade"><option value="">不限</option><option value="any">支持PoE</option><option value="PoE+">至少PoE+</option><option value="PoE++">PoE++</option><option value="none">不支持PoE</option></select></label>
+        <label>最低整机PoE功率（W）<input id="poeBudget" type="number" min="0" step="1"></label>
+        <label class="checkbox-label"><input id="chassis" type="checkbox"> 必须为框式/模块化设备</label>
+        <label>最低主控槽位<input id="controllerSlots" type="number" min="0" step="1"></label>
+        <label>最低业务槽位<input id="serviceSlots" type="number" min="0" step="1"></label>
+      </div>
+
+      <div id="wirelessCriteria" class="criteria-grid hidden">
+        <label>无线代际<select id="wifiGeneration"><option value="">不限</option><option>Wi-Fi 7</option><option>Wi-Fi 6</option><option>Wi-Fi 5</option></select></label>
+        <label>AP形态<select id="apForm"><option value="">不限</option><option>面板AP</option><option>吸顶AP</option><option>室外AP</option><option>高密AP</option></select></label>
+        <label>最低无线速率（Gbps）<input id="wirelessRate" type="number" min="0" step="0.001"></label>
+        <label>最低流数<input id="streams" type="number" min="0" step="1"></label>
+        <label>最低推荐用户数<input id="wirelessUsers" type="number" min="0" step="1"></label>
+        <label>端口要求<input id="wirelessPorts" placeholder="如：2.5G上联口"></label>
+        <label>防护等级<input id="protection" placeholder="如：IP67"></label>
+        <label class="checkbox-label"><input id="wirelessPoe" type="checkbox"> 必须支持PoE供电</label>
+      </div>
+
+      <div id="securityCriteria" class="criteria-grid hidden">
+        <label>端口要求<input id="securityPorts" placeholder="如：8个千兆PoE口、2个SFP光口"></label>
+        <label>最低交换容量（Gbps）<input id="securityCapacity" type="number" min="0" step="0.1"></label>
+        <label>最低包转发率（Mpps）<input id="securityForwarding" type="number" min="0" step="0.01"></label>
+        <label>最低整机PoE功率（W）<input id="securityPoeBudget" type="number" min="0" step="1"></label>
+        <label class="checkbox-label"><input id="securityPoe" type="checkbox"> 必须支持PoE供电</label>
+      </div>
+
+      <div id="accessoryCriteria" class="criteria-grid hidden">
+        <label>适配设备型号<input id="compatibleModel" placeholder="如：US700、S7306X-G"></label>
+      </div>
+
+      <div class="recognized" id="recognizedSummary">尚未识别参数。也可以直接选择产品大类并手动填写。</div>
+      <button type="button" class="primary-button match-button" id="matchButton">开始匹配</button>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="section-title results-title">
+        <div><span class="step">03</span><h2>推荐结果</h2></div>
+        <div class="result-actions"><span id="resultCount">等待匹配</span><button type="button" class="secondary-button" id="exportButton" disabled>导出CSV</button></div>
+      </div>
+      <div class="price-note">价格口径：2026年8月工程商指导价，仅供参考，实际成交价格请以渠道政策为准。</div>
+      <div class="legend"><span><i class="dot pass"></i>符合</span><span><i class="dot review"></i>待确认</span><span><i class="dot fail"></i>不符合</span></div>
+      <div id="emptyState" class="empty-state">输入需求并点击“开始匹配”，此处将显示型号、价格、逐项判断和适配配件。</div>
+      <div id="results" class="results-list"></div>
+      <button type="button" id="showMoreButton" class="secondary-button show-more hidden">显示更多结果</button>
+    </section>
+
+    <section class="panel notes-panel">
+      <h2>使用说明</h2>
+      <ul>
+        <li>支持从一段需求文字中识别产品大类、端口、性能、PoE、用户数和预算，也可手动调整条件。</li>
+        <li>配件与模块不会混入主设备推荐；匹配主设备时，会在结果卡片中显示适配板卡、电源、组合包或通用光模块。</li>
+        <li>“待确认”表示数据源未给出足够信息，不代表产品不支持，投标前仍需结合官网和最新商务政策复核。</li>
+      </ul>
+    </section>
+  </main>
+  <script src="data/products.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

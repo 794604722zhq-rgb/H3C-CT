@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新华三智能选型助手</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <a class="repository-home" href="../index.html">‹ 返回助手首页</a>
+      <h1>新华三智能选型助手</h1>
+      <p>招标参数识别 · 硬性条件筛选 · 推荐型号对照</p>
+    </div>
+    <div class="database-status" id="databaseStatus">正在加载产品数据库…</div>
+  </header>
+
+  <main class="app-shell">
+    <section class="panel input-panel">
+      <div class="section-title">
+        <div>
+          <span class="step">01</span>
+          <h2>输入招标参数</h2>
+        </div>
+        <button type="button" class="secondary-button" id="exampleButton">填入示例</button>
+      </div>
+      <textarea id="tenderText" rows="8" placeholder="请粘贴招标参数，例如：24个千兆电口，4个万兆SFP+，交换容量不低于672Gbps，包转发率不低于126Mpps，支持PoE+。"></textarea>
+      <div class="input-actions">
+        <label>
+          产品线
+          <select id="productLine">
+            <option value="auto">自动识别</option>
+            <option value="switch">交换机</option>
+            <option value="wireless">无线</option>
+          </select>
+        </label>
+        <button type="button" class="primary-button" id="parseButton">识别参数</button>
+      </div>
+    </section>
+
+    <section class="panel criteria-panel">
+      <div class="section-title">
+        <div>
+          <span class="step">02</span>
+          <h2>确认筛选条件</h2>
+        </div>
+        <span class="hint">留空即不参与筛选</span>
+      </div>
+
+      <div id="switchCriteria" class="criteria-grid">
+        <label>网络位置<select id="switchSegment"><option value="">不限</option><option>数据中心交换机</option><option>园区网交换机</option><option>以太全光影终端</option><option>其他交换机</option><option>框式交换机</option></select></label>
+        <label>产品定位<input id="switchRole" placeholder="如：接入、汇聚、核心、低时延"></label>
+        <label>交换容量下限（Gbps）<input id="switchCapacity" type="number" min="0" step="0.01"></label>
+        <label>包转发率下限（Mpps）<input id="switchForwarding" type="number" min="0" step="0.01"></label>
+        <label>端口要求<input id="switchPorts" placeholder="如：48个千兆电口、4个万兆光口"></label>
+        <label>PoE支持/等级<select id="switchPoeLevel"><option value="">不限</option><option value="any">支持 PoE（任意等级）</option><option value="plus">至少 PoE+（802.3at）</option><option value="plusplus">PoE++（802.3bt）</option><option value="none">不支持 PoE</option></select></label>
+        <label class="checkbox-label"><input id="switchChassis" type="checkbox"> 必须为框式交换机</label>
+        <label>主控板数量下限（框式）<input id="controllerSlots" type="number" min="0" step="1" placeholder="如：2"></label>
+        <label>交换网板数量下限（框式）<input id="fabricSlots" type="number" min="0" step="1" placeholder="如：6"></label>
+        <label>业务板数量下限（框式）<input id="serviceSlots" type="number" min="0" step="1" placeholder="如：8"></label>
+        <label class="checkbox-label"><input id="switchDomestic" type="checkbox"> 必须为国产化型号</label>
+      </div>
+
+      <div id="wirelessCriteria" class="criteria-grid hidden">
+        <label>设备类型<select id="wirelessType"><option value="">不限</option><option value="AP">AP</option><option value="AC控制器">AC控制器</option></select></label>
+        <label>无线代际<select id="wifiGeneration"><option value="">不限</option><option value="Wi-Fi 7">Wi-Fi 7</option><option value="Wi-Fi 6">Wi-Fi 6</option></select></label>
+        <label>AP形态<input id="apForm" placeholder="如：高密、放装、面板、室外、工业"></label>
+        <label>最低总流数<input id="apStreams" type="number" min="0" step="1"></label>
+        <label>最低整机速率（Gbps）<input id="apRate" type="number" min="0" step="0.001"></label>
+        <label>端口要求<input id="wirelessPorts" placeholder="如：2.5GE、10GE"></label>
+        <label class="checkbox-label"><input id="poeRequired" type="checkbox"> 必须支持 PoE 供电</label>
+      </div>
+
+      <div class="recognized" id="recognizedSummary">尚未识别参数。您也可以直接手动填写条件。</div>
+      <button type="button" class="primary-button match-button" id="matchButton">开始匹配</button>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="section-title results-title">
+        <div>
+          <span class="step">03</span>
+          <h2>推荐结果</h2>
+        </div>
+        <div class="result-actions">
+          <span id="resultCount">等待匹配</span>
+          <button type="button" class="secondary-button" id="exportButton" disabled>导出 CSV</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="dot pass"></i>符合：所有已知硬性条件满足</span>
+        <span><i class="dot review"></i>待确认：无明确数据证明不满足</span>
+        <span><i class="dot fail"></i>不符合：至少一项明确不满足</span>
+      </div>
+      <div id="emptyState" class="empty-state">输入参数并点击“开始匹配”，此处将显示推荐型号与逐项判断。</div>
+      <div id="results" class="results-list"></div>
+      <button type="button" id="showMoreButton" class="secondary-button show-more hidden">显示更多结果</button>
+    </section>
+
+    <section class="panel notes-panel">
+      <h2>使用说明</h2>
+      <ul>
+        <li>交换容量支持 T/Tbps、G/Gbps；包转发率支持 M/Mpps。框式设备可按主控板、交换网板和业务板数量筛选。</li>
+        <li>端口速率以“/”并列时按最高速率理解，例如10G/2.5G/1G按10G、25G/10G按25G筛选。</li>
+        <li>框式交换机匹配时不校验固定端口配置，重点比较交换容量、包转发率及三类板卡数量。</li>
+        <li>“待确认”表示数据库未提供足够数据，不能自动承诺满足，建议点击官网链接复核。</li>
+        <li>RS系列属于弱电款型，网页保留查询，但匹配度固定为最低并排在常用产品之后。</li>
+        <li>数据库来自同目录当前版本的交换机与无线选型工具，产品数据更新后需重新生成本工具的数据文件。</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="data/products.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

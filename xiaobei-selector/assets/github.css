@@ -1,0 +1,11 @@
+.repository-home {
+  display: inline-block;
+  margin-bottom: 7px;
+  color: #cce0ea;
+  font-size: 12px;
+  text-decoration: none;
+}
+.repository-home:hover {
+  color: #fff;
+  text-decoration: underline;
+}
