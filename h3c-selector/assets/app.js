@@ -265,7 +265,14 @@
         label: implicit[0].trim(),
       });
     }
-    return output.sort((a, b) => a.index - b.index).filter((item, index, all) => !all.some((other, otherIndex) => otherIndex !== index && other.index === item.index && other.label.length > item.label.length));
+    const parsed = output.sort((a, b) => a.index - b.index).filter((item, index, all) => !all.some((other, otherIndex) => otherIndex !== index && other.index === item.index && other.label.length > item.label.length));
+    return parsed.filter((item, index, all) => {
+      if (item.count !== 1 || /\d/.test(item.label)) return true;
+      return !all.some((other, otherIndex) => otherIndex !== index
+        && other.count > 1
+        && other.speed === item.speed
+        && (!item.medium || !other.medium || item.medium === other.medium));
+    });
   }
   function splitProductPortSegments(value) {
     const protectedText = String(value || '')
@@ -315,6 +322,7 @@
     const actualPorts = parseProductPorts(product.ports);
     if (!actualPorts.length) return { status: 'review', label: '端口形态', detail: '产品端口数据无法结构化识别' };
     const details = [];
+    const items = [];
     let failed = false;
     let uncertain = false;
     for (const required of requiredPorts) {
@@ -327,9 +335,20 @@
         return true;
       });
       const available = candidates.reduce((sum, item) => sum + item.count, 0);
-      if (available >= required.count) details.push(`${required.label}：可用${available}口`);
-      else if (actualPorts.length) { failed = true; details.push(`${required.label}：仅识别到${available}口`); }
-      else { uncertain = true; details.push(`${required.label}：待确认`); }
+      const unit = required.medium === 'copper' ? '电口' : required.medium === 'optical' ? '光口' : '端口';
+      const breakdown = candidates.map(item => `${item.count}个${item.speed}G${unit}`).join(' + ');
+      if (available >= required.count) {
+        details.push(`${required.label}：可用${available}个${unit}`);
+        items.push({ requirement: required.label, available, unit, breakdown, status: 'pass' });
+      } else if (actualPorts.length) {
+        failed = true;
+        details.push(`${required.label}：仅有${available}个${unit}`);
+        items.push({ requirement: required.label, available, unit, breakdown, status: 'fail' });
+      } else {
+        uncertain = true;
+        details.push(`${required.label}：待确认`);
+        items.push({ requirement: required.label, available: null, unit, status: 'review' });
+      }
     }
     const proximity = requiredPorts.length ? requiredPorts.reduce((sum, required) => {
       const available = actualPorts.filter(actual => {
@@ -342,7 +361,7 @@
       }).reduce((sum, item) => sum + item.count, 0);
       return sum + Math.min(required.count, available) / Math.max(required.count, available, 1);
     }, 0) / requiredPorts.length : 1;
-    return { status: failed ? 'fail' : uncertain ? 'review' : 'pass', label: '端口形态', detail: details.join('；'), proximity };
+    return { status: failed ? 'fail' : uncertain ? 'review' : 'pass', label: '端口形态', detail: details.join('；'), proximity, items };
   }
   function matchText(product, requirement, label) {
     const tokens = requirementTokens(requirement);
@@ -438,6 +457,40 @@
       : { status: 'fail', label, detail: `${actual.detail}；低于${switchPoeRequirementText(requirement)}` };
   }
   function isChassis(product) { return Boolean(product.controller || product.fabric || product.serviceBoard || product.architecture); }
+  function expansionSlotCount(product) {
+    if (isChassis(product)) return 0;
+    const stored = Number(product.expansionSlots);
+    if (Number.isFinite(stored) && stored > 0) return stored;
+    const text = String(product.ports || '');
+    const patterns = [
+      /(\d+)\s*(?:×|x|X|\*)?\s*个?\s*业务插槽/i,
+      /(\d+)\s*(?:×|x|X|\*)?\s*个?\s*slot(?:\s*扩展插槽)?/i,
+      /(\d+)\s*(?:×|x|X|\*)?\s*个?\s*(?:端口)?扩展(?:卡)?(?:插槽|槽位)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) return Number(match[1]);
+    }
+    return 0;
+  }
+  function expansionOptionsSummary(product) {
+    const slotCount = expansionSlotCount(product);
+    if (!slotCount) return '';
+    const components = Array.isArray(product.optionalComponents) ? product.optionalComponents.filter(Boolean) : [];
+    const slotText = `<br><strong>扩展能力：</strong>${slotCount}个扩展槽位`;
+    const source = product.optionsUrl ? `<a href="${escapeHtml(product.optionsUrl)}" target="_blank" rel="noopener">查看官网选配说明</a>` : '';
+    if (!components.length) {
+      if (!product.optionsPageChecked) return slotText;
+      const checkedNote = product.optionalComponentsNote || '官网选配页面未单列扩展板卡。';
+      return `${slotText}<div class="optional-components-empty">${escapeHtml(checkedNote)}${source}</div>`;
+    }
+    const componentItems = components.map(component => {
+      const label = typeof component === 'string' ? component : [component.model, component.description].filter(Boolean).join(' — ');
+      return `<li>${escapeHtml(label)}</li>`;
+    }).join('');
+    const note = product.optionalComponentsNote ? `<div class="optional-components-note">${escapeHtml(product.optionalComponentsNote)}</div>` : '';
+    return `${slotText}<details class="optional-components"><summary>可选组件（${components.length}类）</summary><ul>${componentItems}</ul>${note}${source}</details>`;
+  }
   function isWeakCurrentSwitch(product) {
     return [product.series, product.model].some(value => /^RS(?:\d|[-\s])/i.test(String(value || '').trim()));
   }
@@ -479,6 +532,17 @@
   }
   function escapeHtml(value) { return String(value || '').replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char]); }
   function statusText(status) { return status === 'pass' ? '符合' : status === 'review' ? '待确认' : '不符合'; }
+  function renderCheck(check) {
+    if (check.label === '端口形态' && Array.isArray(check.items) && check.items.length) {
+      const rows = check.items.map(item => {
+        const available = item.available === null ? '待确认' : `${item.available}个${item.unit}`;
+        const breakdown = item.breakdown ? `<small class="port-match-breakdown">构成：${escapeHtml(item.breakdown)}</small>` : '';
+        return `<div class="port-match-row ${item.status}"><div><span class="port-match-key">需求</span><strong>${escapeHtml(item.requirement)}</strong></div><div class="port-match-available"><span class="port-match-key">可用</span><strong>${escapeHtml(available)}</strong>${breakdown}</div></div>`;
+      }).join('');
+      return `<div class="check port-check ${check.status}"><strong class="check-title">端口形态</strong><div class="port-match-list">${rows}</div></div>`;
+    }
+    return `<div class="check ${check.status}"><strong>${escapeHtml(check.label)}</strong>：${escapeHtml(check.detail)}</div>`;
+  }
   function tenderGuideLink(product) {
     const guideByModel = {
       'S12504G-AF': 's12500g-af', 'S12508G-AF': 's12500g-af', 'S12516G-AF': 's12500g-af',
@@ -497,8 +561,9 @@
   function productSummary(product) {
     if (product.line === '交换机') {
       const slots = isChassis(product) ? `<br><strong>板卡槽位：</strong>主控 ${escapeHtml(product.controllerSlots ?? '未明确')} / 网板 ${escapeHtml(product.fabricSlots ?? '未明确')} / 业务板 ${escapeHtml(product.serviceSlots ?? '未明确')}` : '';
+      const expansionOptions = isChassis(product) ? '' : expansionOptionsSummary(product);
       const portText = isChassis(product) ? '按业务板配置（不参与框式匹配）' : (product.ports || '未记录');
-      return `<strong>性能：</strong>${escapeHtml(product.switchingMin || '—')} / ${escapeHtml(product.switchingMax || '—')}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}<br><strong>PoE：</strong>${escapeHtml(product.poeLevel || '未记录')}${slots}<br><strong>架构：</strong>${escapeHtml(product.architecture || '未记录')}`;
+      return `<strong>性能：</strong>${escapeHtml(product.switchingMin || '—')} / ${escapeHtml(product.switchingMax || '—')}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}${expansionOptions}<br><strong>PoE：</strong>${escapeHtml(product.poeLevel || '未记录')}${slots}<br><strong>架构：</strong>${escapeHtml(product.architecture || '未记录')}`;
     }
     const rate = product.maxRate || '未记录';
     return `<strong>形态：</strong>${escapeHtml(product.form || '未记录')}；<strong>代际：</strong>${escapeHtml(product.generation || '未记录')}<br><strong>流数/速率：</strong>${escapeHtml(product.streams || product.streamText || '未记录')} / ${escapeHtml(rate)}<br><strong>端口：</strong>${escapeHtml(product.ports || '未记录')}`;
@@ -510,7 +575,7 @@
     refs.exportButton.disabled = false;
     refs.results.innerHTML = state.results.slice(0, state.visible).map(item => {
       const p = item.product;
-      const checks = item.checks.length ? item.checks.map(check => `<div class="check ${check.status}"><strong>${escapeHtml(check.label)}</strong>：${escapeHtml(check.detail)}</div>`).join('') : '<div class="check review">未设置筛选条件，请补充参数。</div>';
+      const checks = item.checks.length ? item.checks.map(renderCheck).join('') : '<div class="check review">未设置筛选条件，请补充参数。</div>';
       const link = p.url ? `<a class="official-link" href="${escapeHtml(p.url)}" target="_blank" rel="noopener">查看官网参数</a>` : '';
       return `<article class="result-card ${item.status}"><div class="result-head"><div><div class="model-row"><div class="model">${escapeHtml(p.model)}</div>${tenderGuideLink(p)}</div><div class="series">${escapeHtml(p.segment)} · ${escapeHtml(p.series || p.form || p.type)}</div></div><span class="status-chip">${statusText(item.status)}</span><span class="score">匹配度 ${item.score}%</span></div><div class="result-body"><div class="checks">${checks}</div><div class="product-summary">${productSummary(p)}${link}</div></div></article>`;
     }).join('');
