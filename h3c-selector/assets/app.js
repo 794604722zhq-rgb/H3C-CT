@@ -267,12 +267,35 @@
     }
     return output.sort((a, b) => a.index - b.index).filter((item, index, all) => !all.some((other, otherIndex) => otherIndex !== index && other.index === item.index && other.label.length > item.label.length));
   }
-  function parseProductPorts(value) {
+  function splitProductPortSegments(value) {
     const protectedText = String(value || '')
+      .replace(/PoE\+\+/gi, 'POEPLUSPLUS')
+      .replace(/PoE\+/gi, 'POEPLUS')
       .replace(/QSFP\+/gi, 'QSFPPLUS')
       .replace(/SFP\+/gi, 'SFPPLUS')
       .replace(/＋/g, '+');
-    const segments = protectedText.split(/\s*\+\s*|[；;]/).map(segment => segment.replace(/QSFPPLUS/gi, 'QSFP+').replace(/SFPPLUS/gi, 'SFP+').trim()).filter(Boolean);
+    const segments = [];
+    let current = '';
+    let depth = 0;
+    for (const char of protectedText) {
+      if (/[（(\[【]/.test(char)) depth += 1;
+      if (depth === 0 && /[，,；;+]/.test(char)) {
+        if (current.trim()) segments.push(current.trim());
+        current = '';
+        continue;
+      }
+      current += char;
+      if (/[）)\]】]/.test(char)) depth = Math.max(0, depth - 1);
+    }
+    if (current.trim()) segments.push(current.trim());
+    return segments.map(segment => segment
+      .replace(/POEPLUSPLUS/gi, 'PoE++')
+      .replace(/POEPLUS/gi, 'PoE+')
+      .replace(/QSFPPLUS/gi, 'QSFP+')
+      .replace(/SFPPLUS/gi, 'SFP+'));
+  }
+  function parseProductPorts(value) {
+    const segments = splitProductPortSegments(value);
     const output = [];
     for (const segment of segments) {
       const countMatch = segment.match(/^\s*(\d+)\s*(?:个|口|[×xX*])/i);
