@@ -9,9 +9,8 @@
 <body>
   <header class="topbar">
     <div>
-      <a class="repository-home" href="../index.html">‹ 返回助手首页</a>
-      <h1>新华三智能选型助手</h1>
-      <p>招标参数识别 · 硬性条件筛选 · 推荐型号对照</p>
+      <h1 id="assistantTitle">新华三智能选型助手</h1>
+      <p id="assistantSubtitle">招标参数识别 · 硬性条件筛选 · 推荐型号对照</p>
     </div>
     <div class="database-status" id="databaseStatus">正在加载产品数据库…</div>
   </header>
@@ -25,14 +24,15 @@
         </div>
         <button type="button" class="secondary-button" id="exampleButton">填入示例</button>
       </div>
-      <textarea id="tenderText" rows="8" placeholder="请粘贴招标参数，例如：24个千兆电口，4个万兆SFP+，交换容量不低于672Gbps，包转发率不低于126Mpps，支持PoE+。"></textarea>
+      <textarea id="tenderText" rows="8" placeholder="请粘贴交换机、无线或路由器招标参数，系统会自动识别产品线和关键性能条件。"></textarea>
       <div class="input-actions">
-        <label>
+        <label id="productLineControl">
           产品线
           <select id="productLine">
             <option value="auto">自动识别</option>
             <option value="switch">交换机</option>
             <option value="wireless">无线</option>
+            <option value="router">路由器</option>
           </select>
         </label>
         <button type="button" class="primary-button" id="parseButton">识别参数</button>
@@ -72,6 +72,19 @@
         <label class="checkbox-label"><input id="poeRequired" type="checkbox"> 必须支持 PoE 供电</label>
       </div>
 
+      <div id="routerCriteria" class="criteria-grid hidden">
+        <label>产品分类<select id="routerSegment"><option value="">不限</option><option>高端路由器</option><option>中低端框式路由器</option><option>汇聚/接入路由器</option><option>中低端盒式路由器</option></select></label>
+        <label>产品定位<input id="routerRole" placeholder="如：核心、汇聚、接入、模块化"></label>
+        <label>型号/系列关键词<input id="routerKeyword" placeholder="如：CR19000、SR6600、MSR5600"></label>
+        <label>交换容量下限（Gbps）<input id="routerCapacity" type="number" min="0" step="0.01"></label>
+        <label>包转发率下限（Mpps）<input id="routerForwarding" type="number" min="0" step="0.01"></label>
+        <label>固定端口要求<input id="routerPorts" placeholder="如：8个千兆电口、2个万兆光口"></label>
+        <label class="checkbox-label"><input id="routerChassis" type="checkbox"> 必须为框式/模块化路由器</label>
+        <label>主控板数量下限（框式）<input id="routerControllerSlots" type="number" min="0" step="1" placeholder="如：2"></label>
+        <label>交换网板数量下限（框式）<input id="routerFabricSlots" type="number" min="0" step="1" placeholder="如：2"></label>
+        <label>业务板/线卡数量下限（框式）<input id="routerServiceSlots" type="number" min="0" step="1" placeholder="如：8"></label>
+      </div>
+
       <div class="recognized" id="recognizedSummary">尚未识别参数。您也可以直接手动填写条件。</div>
       <button type="button" class="primary-button match-button" id="matchButton">开始匹配</button>
     </section>
@@ -102,15 +115,17 @@
       <ul>
         <li>交换容量支持 T/Tbps、G/Gbps；包转发率支持 M/Mpps。框式设备可按主控板、交换网板和业务板数量筛选。</li>
         <li>端口速率以“/”并列时按最高速率理解，例如10G/2.5G/1G按10G、25G/10G按25G筛选。</li>
-        <li>框式交换机匹配时不校验固定端口配置，重点比较交换容量、包转发率及三类板卡数量。</li>
+        <li>框式交换机和框式路由器匹配时不校验固定端口配置，重点比较交换容量、包转发率及三类板卡数量。</li>
+        <li>路由器交换容量标注“官网未公布”时不参与容量硬性淘汰，并在结果中显示为待确认。</li>
         <li>“待确认”表示数据库未提供足够数据，不能自动承诺满足，建议点击官网链接复核。</li>
         <li>RS系列属于弱电款型，网页保留查询，但匹配度固定为最低并排在常用产品之后。</li>
-        <li>数据库来自同目录当前版本的交换机与无线选型工具，产品数据更新后需重新生成本工具的数据文件。</li>
+        <li>数据库来自同目录当前版本的交换机、无线与路由器选型工具，产品数据更新后需重新生成本工具的数据文件。</li>
       </ul>
     </section>
   </main>
 
   <script src="data/products.js"></script>
+  <script src="data/routers.js"></script>
   <script src="assets/app.js"></script>
 </body>
 </html>

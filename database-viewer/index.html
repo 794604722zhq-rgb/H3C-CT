@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>产品数据库网页查看</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a id="homeLink" class="back-link" href="../">‹ 返回统一入口</a>
+      <div>
+        <span class="eyebrow">ZHQ PRODUCT DATABASE</span>
+        <h1 id="pageTitle">正在加载产品数据库…</h1>
+        <p>网页查看最终版 Excel 内容，可切换工作表并搜索当前工作表。</p>
+      </div>
+      <a id="downloadLink" class="download-button" href="#" download>下载原始 Excel</a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="toolbar" aria-label="数据库操作">
+      <label>工作表<select id="sheetSelect"></select></label>
+      <label class="search-field">搜索当前工作表<input id="searchInput" type="search" placeholder="输入型号、系列或任意参数"></label>
+      <div id="rowCount" class="row-count">0 条数据</div>
+    </section>
+
+    <section id="sheetNotes" class="sheet-notes hidden"></section>
+
+    <section class="table-panel">
+      <div class="table-scroll">
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state hidden">当前条件下没有找到数据。</div>
+      <button id="showMoreButton" class="show-more hidden" type="button">显示更多</button>
+    </section>
+  </main>
+
+  <script src="viewer-config.js"></script>
+  <script src="data/switch.js"></script>
+  <script src="data/wireless.js"></script>
+  <script src="data/router.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

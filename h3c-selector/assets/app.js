@@ -2,13 +2,14 @@
   'use strict';
 
   const data = window.H3C_SELECTOR_DATA;
+  const routerData = window.H3C_ROUTER_DATA || { stats: { router: 0 }, products: [] };
   const el = id => document.getElementById(id);
   const state = { parsedLine: 'switch', results: [], visible: 10 };
 
   const refs = {
     databaseStatus: el('databaseStatus'), tenderText: el('tenderText'), productLine: el('productLine'),
     parseButton: el('parseButton'), exampleButton: el('exampleButton'), matchButton: el('matchButton'),
-    switchCriteria: el('switchCriteria'), wirelessCriteria: el('wirelessCriteria'), recognizedSummary: el('recognizedSummary'),
+    switchCriteria: el('switchCriteria'), wirelessCriteria: el('wirelessCriteria'), routerCriteria: el('routerCriteria'), recognizedSummary: el('recognizedSummary'),
     results: el('results'), emptyState: el('emptyState'), resultCount: el('resultCount'), exportButton: el('exportButton'),
     showMoreButton: el('showMoreButton'), switchSegment: el('switchSegment'), switchRole: el('switchRole'),
     switchCapacity: el('switchCapacity'), switchForwarding: el('switchForwarding'), switchPorts: el('switchPorts'),
@@ -16,6 +17,10 @@
     controllerSlots: el('controllerSlots'), fabricSlots: el('fabricSlots'), serviceSlots: el('serviceSlots'),
     wifiGeneration: el('wifiGeneration'), apForm: el('apForm'), apStreams: el('apStreams'), apRate: el('apRate'),
     wirelessPorts: el('wirelessPorts'), poeRequired: el('poeRequired'),
+    routerSegment: el('routerSegment'), routerRole: el('routerRole'), routerKeyword: el('routerKeyword'),
+    routerCapacity: el('routerCapacity'), routerForwarding: el('routerForwarding'), routerPorts: el('routerPorts'),
+    routerChassis: el('routerChassis'), routerControllerSlots: el('routerControllerSlots'),
+    routerFabricSlots: el('routerFabricSlots'), routerServiceSlots: el('routerServiceSlots'),
   };
 
   if (!data || !Array.isArray(data.products)) {
@@ -23,7 +28,12 @@
     refs.databaseStatus.style.borderColor = '#f0a79d';
     return;
   }
-  refs.databaseStatus.textContent = `数据库：${data.stats.switch} 款交换机 · ${data.stats.wireless} 款无线产品`;
+  if (Array.isArray(routerData.products) && routerData.products.length) {
+    data.products = data.products.filter(product => product.line !== '路由器').concat(routerData.products);
+    data.stats.router = routerData.stats.router || routerData.products.length;
+    data.stats.total = data.products.length;
+  }
+  refs.databaseStatus.textContent = `数据库：${data.stats.switch} 款交换机 · ${data.stats.wireless} 款无线产品 · ${data.stats.router || 0} 款路由器`;
 
   function normalizeText(value) { return String(value || '').replace(/[，；]/g, ',').replace(/\s+/g, ' ').trim(); }
   function numeric(value) {
@@ -71,6 +81,7 @@
   }
   function inferLine(source) {
     if (/wifi|wi-fi|无线|\bap\b|接入点|射频|流数|ssid|ac控制器/i.test(source)) return 'wireless';
+    if (/路由器|cr19000|cr16000|sr8800|sr6600|msr\s*\d*/i.test(source)) return 'router';
     return 'switch';
   }
   function switchCapacityFromTender(source) {
@@ -154,7 +165,7 @@
       if (refs.fabricSlots.value) recognized.push(`交换网板 ≥ ${refs.fabricSlots.value}`);
       if (refs.serviceSlots.value) recognized.push(`业务板 ≥ ${refs.serviceSlots.value}`);
       if (refs.switchDomestic.checked) recognized.push('国产化');
-    } else {
+    } else if (state.parsedLine === 'wireless') {
       if (/控制器|\bac\b/i.test(source) && !/\bap\b/i.test(source)) refs.wirelessType.value = 'AC控制器';
       else refs.wirelessType.value = 'AP';
       refs.wifiGeneration.value = /wifi\s*7|wi-fi\s*7|802\.11be/i.test(source) ? 'Wi-Fi 7' : /wifi\s*6|wi-fi\s*6|802\.11ax/i.test(source) ? 'Wi-Fi 6' : '';
@@ -171,6 +182,33 @@
       if (refs.apRate.value) recognized.push(`整机速率 ≥ ${refs.apRate.value} Gbps`);
       if (refs.wirelessPorts.value) recognized.push(`端口：${refs.wirelessPorts.value}`);
       if (refs.poeRequired.checked) recognized.push('PoE供电');
+    } else {
+      refs.routerCapacity.value = switchCapacityFromTender(source);
+      refs.routerForwarding.value = switchForwardingFromTender(source);
+      refs.routerControllerSlots.value = boardCountFromTender(source, 'controller');
+      refs.routerFabricSlots.value = boardCountFromTender(source, 'fabric');
+      refs.routerServiceSlots.value = boardCountFromTender(source, 'service');
+      refs.routerChassis.checked = /框式|机框式|模块化(?:机箱|路由器)?/i.test(source) || Boolean(refs.routerControllerSlots.value || refs.routerFabricSlots.value || refs.routerServiceSlots.value);
+      refs.routerPorts.value = refs.routerChassis.checked ? '' : extractPortPhrase(source);
+      refs.routerRole.value = ['核心', '汇聚', '接入', '模块化'].find(word => source.includes(word)) || '';
+      const model = source.match(/\b(?:CR|SR|MSR)\s*[-]?\s*\d[\w-]*/i);
+      refs.routerKeyword.value = model ? model[0].replace(/\s+/g, '') : '';
+      if (/中低端框式/.test(source)) refs.routerSegment.value = '中低端框式路由器';
+      else if (/汇聚\s*[\/、和与]?\s*接入|汇聚接入/.test(source)) refs.routerSegment.value = '汇聚/接入路由器';
+      else if (/中低端盒式|盒式路由器/.test(source)) refs.routerSegment.value = '中低端盒式路由器';
+      else if (/高端路由器/.test(source)) refs.routerSegment.value = '高端路由器';
+      syncRouterChassisMode();
+      recognized.push('产品线：路由器');
+      if (refs.routerSegment.value) recognized.push(`分类：${refs.routerSegment.value}`);
+      if (refs.routerRole.value) recognized.push(`定位：${refs.routerRole.value}`);
+      if (refs.routerKeyword.value) recognized.push(`型号/系列：${refs.routerKeyword.value}`);
+      if (refs.routerCapacity.value) recognized.push(`交换容量 ≥ ${refs.routerCapacity.value} Gbps`);
+      if (refs.routerForwarding.value) recognized.push(`包转发率 ≥ ${refs.routerForwarding.value} Mpps`);
+      if (refs.routerPorts.value) recognized.push(`端口：${refs.routerPorts.value}`);
+      if (refs.routerChassis.checked) recognized.push('框式/模块化路由器');
+      if (refs.routerControllerSlots.value) recognized.push(`主控板 ≥ ${refs.routerControllerSlots.value}`);
+      if (refs.routerFabricSlots.value) recognized.push(`交换网板 ≥ ${refs.routerFabricSlots.value}`);
+      if (refs.routerServiceSlots.value) recognized.push(`业务板/线卡 ≥ ${refs.routerServiceSlots.value}`);
     }
     refs.recognizedSummary.textContent = recognized.length > 1 ? `已识别：${recognized.join('；')}` : '没有识别出明确的数值条件，请手动补充后开始匹配。';
   }
@@ -178,6 +216,7 @@
   function showCriteria(line) {
     refs.switchCriteria.classList.toggle('hidden', line !== 'switch');
     refs.wirelessCriteria.classList.toggle('hidden', line !== 'wireless');
+    refs.routerCriteria.classList.toggle('hidden', line !== 'router');
   }
 
   function syncChassisMode() {
@@ -185,6 +224,13 @@
     refs.switchPorts.disabled = chassisMode;
     refs.switchPorts.placeholder = chassisMode ? '框式交换机不参与端口匹配' : '如：48个千兆电口、4个万兆光口';
     if (chassisMode) refs.switchPorts.value = '';
+  }
+
+  function syncRouterChassisMode() {
+    const chassisMode = refs.routerChassis.checked || refs.routerSegment.value === '中低端框式路由器' || Boolean(refs.routerControllerSlots.value || refs.routerFabricSlots.value || refs.routerServiceSlots.value);
+    refs.routerPorts.disabled = chassisMode;
+    refs.routerPorts.placeholder = chassisMode ? '框式/模块化路由器不参与固定端口匹配' : '如：8个千兆电口、2个万兆光口';
+    if (chassisMode) refs.routerPorts.value = '';
   }
 
   function requirementTokens(value) {
@@ -399,6 +445,21 @@
       ports: refs.wirelessPorts.value.trim(), poe: refs.poeRequired.checked,
     };
   }
+  function routerRequirements() {
+    const controllerSlots = Number(refs.routerControllerSlots.value) || 0;
+    const fabricSlots = Number(refs.routerFabricSlots.value) || 0;
+    const serviceSlots = Number(refs.routerServiceSlots.value) || 0;
+    return {
+      segment: refs.routerSegment.value,
+      role: refs.routerRole.value.trim(),
+      keyword: refs.routerKeyword.value.trim(),
+      capacity: Number(refs.routerCapacity.value) || 0,
+      forwarding: Number(refs.routerForwarding.value) || 0,
+      ports: refs.routerPorts.value.trim(),
+      chassis: refs.routerChassis.checked || refs.routerSegment.value === '中低端框式路由器' || Boolean(controllerSlots || fabricSlots || serviceSlots),
+      controllerSlots, fabricSlots, serviceSlots,
+    };
+  }
   function evaluateSwitch(product, req) {
     const checks = [];
     if (req.segment) checks.push(product.segment === req.segment || (req.segment === '框式交换机' && isChassis(product)) ? { status: 'pass', label: '产品分类', detail: product.segment } : { status: 'fail', label: '产品分类', detail: product.segment });
@@ -505,6 +566,30 @@
     if (req.poe) checks.push(/poe/i.test(`${product.poe} ${product.searchText}`) ? { status: 'pass', label: 'PoE供电', detail: product.poe || '产品参数中已检出PoE' } : product.poe ? { status: 'fail', label: 'PoE供电', detail: product.poe } : { status: 'review', label: 'PoE供电', detail: '未明确' });
     return finalize(product, checks);
   }
+  function evaluateRouter(product, req) {
+    const checks = [];
+    if (req.segment) checks.push(product.segment === req.segment
+      ? { status: 'pass', label: '产品分类', detail: product.segment }
+      : { status: 'fail', label: '产品分类', detail: product.segment });
+    if (req.role) checks.push(product.searchText.includes(req.role.toLowerCase())
+      ? { status: 'pass', label: '产品定位', detail: `${product.subcategory || product.segment}；已检出“${req.role}”` }
+      : { status: 'fail', label: '产品定位', detail: `${product.subcategory || product.segment}；未检出“${req.role}”` });
+    if (req.keyword) checks.push(product.searchText.includes(req.keyword.toLowerCase())
+      ? { status: 'pass', label: '型号/系列', detail: `${product.series} / ${product.model}` }
+      : { status: 'fail', label: '型号/系列', detail: `${product.series} / ${product.model}` });
+    if (req.capacity) checks.push(product.capacityPublished === false
+      ? { status: 'review', label: '交换容量', detail: '官网未公布，不参与交换容量硬性筛选' }
+      : compareMinimum([product.switchingMax, product.switchingMin], req.capacity, capacityGbps, '交换容量'));
+    if (req.forwarding) checks.push(compareMinimum([product.forwardingMax, product.forwardingMin], req.forwarding, forwardingMpps, '包转发率'));
+    if (req.ports && !req.chassis) checks.push(matchPorts(product, req.ports));
+    if (req.chassis) checks.push(product.chassis
+      ? { status: 'pass', label: '框式/模块化设备', detail: product.form || '具备框式硬件信息' }
+      : { status: 'fail', label: '框式/模块化设备', detail: product.form || '固定式设备' });
+    if (req.controllerSlots) checks.push(compareSlotCount(product.controllerSlots, req.controllerSlots, '主控板数量'));
+    if (req.fabricSlots) checks.push(compareSlotCount(product.fabricSlots, req.fabricSlots, '交换网板数量'));
+    if (req.serviceSlots) checks.push(compareSlotCount(product.serviceSlots, req.serviceSlots, '业务板/线卡数量'));
+    return finalize(product, checks);
+  }
   function finalize(product, checks) {
     const relevant = checks.filter(Boolean);
     if (!relevant.length) return { product, checks: [], status: 'review', score: 0, fail: 0, review: 1, pass: 0 };
@@ -519,10 +604,11 @@
     return { product, checks: relevant, status, score, fail, review, pass };
   }
   function matchProducts() {
-    const line = state.parsedLine || (refs.productLine.value === 'wireless' ? 'wireless' : 'switch');
-    const products = data.products.filter(product => product.line === (line === 'wireless' ? '无线' : '交换机'));
-    const req = line === 'wireless' ? wirelessRequirements() : switchRequirements();
-    state.results = products.map(product => line === 'wireless' ? evaluateWireless(product, req) : evaluateSwitch(product, req));
+    const line = state.parsedLine || (refs.productLine.value === 'wireless' ? 'wireless' : refs.productLine.value === 'router' ? 'router' : 'switch');
+    const lineLabel = line === 'wireless' ? '无线' : line === 'router' ? '路由器' : '交换机';
+    const products = data.products.filter(product => product.line === lineLabel);
+    const req = line === 'wireless' ? wirelessRequirements() : line === 'router' ? routerRequirements() : switchRequirements();
+    state.results = products.map(product => line === 'wireless' ? evaluateWireless(product, req) : line === 'router' ? evaluateRouter(product, req) : evaluateSwitch(product, req));
     state.results.sort((a, b) => {
       const order = { pass: 0, review: 1, fail: 2 };
       return Number(Boolean(a.lowPriority)) - Number(Boolean(b.lowPriority)) || order[a.status] - order[b.status] || b.score - a.score || a.product.model.localeCompare(b.product.model, 'zh-CN', { numeric: true });
@@ -552,6 +638,12 @@
       'S6850-2C': 's6850', 'S6850-56HF': 's6850', 'S6850-56HF-H1': 's6850', 'S6850-56HF-H3': 's6850', 'S6850-56HF-CP': 's6850', 'S6850-56HF-IM': 's6850',
       'S6805-56HF-G': 's6850-g', 'S6805-56HT-G': 's6850-g', 'S6850-56HF-G': 's6850-g',
       'S7503X-G': 's7500x-g', 'S7503X-M-G': 's7500x-g', 'S7506X-G': 's7500x-g', 'S7506X-G-MF': 's7500x-g', 'S7510X-G': 's7500x-g',
+      'S6880-48X8C': 's6880', 'S6880-48Y8C': 's6880',
+      'S9820-64H': 's9820-64h', 'S9820-8C': 's9820-8c', 'S9820-8M': 's9820-8m', 'S9820-8C-G': 's9820-8c-g',
+      'S9827-128DH': 's9827-128dh', 'S9827-128DH-H1': 's9827-128dh', 'S9827-64E': 's9827-64e', 'S9827-64EP': 's9827-64ep',
+      'S9850-32H': 's9850', 'S9850-4C': 's9850', 'S9850-32H-G': 's9850-g',
+      'S9855-24B8D': 's9855-24b8d', 'S9855-32D': 's9855-32d', 'S9855-40B': 's9855-40b', 'S9855-48CD8D': 's9855-48cd8d',
+      'S9855-24B16DH-G': 's9855-g', 'S9855-32DH-G': 's9855-g',
     };
     const model = String(product.model || '').trim();
     const guideSlug = guideByModel[model];
@@ -564,6 +656,13 @@
       const expansionOptions = isChassis(product) ? '' : expansionOptionsSummary(product);
       const portText = isChassis(product) ? '按业务板配置（不参与框式匹配）' : (product.ports || '未记录');
       return `<strong>性能：</strong>${escapeHtml(product.switchingMin || '—')} / ${escapeHtml(product.switchingMax || '—')}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}${expansionOptions}<br><strong>PoE：</strong>${escapeHtml(product.poeLevel || '未记录')}${slots}<br><strong>架构：</strong>${escapeHtml(product.architecture || '未记录')}`;
+    }
+    if (product.line === '路由器') {
+      const slots = product.chassis ? `<br><strong>板卡槽位：</strong>主控 ${escapeHtml(product.controllerSlots ?? '未明确')} / 网板 ${escapeHtml(product.fabricSlots ?? '未明确')} / 业务板/线卡 ${escapeHtml(product.serviceSlots ?? '未明确')}` : '';
+      const capacity = product.capacityPublished === false ? '官网未公布' : `${product.switchingMin || '—'} / ${product.switchingMax || '—'}`;
+      const portText = product.chassis ? '按业务板/线卡配置（不参与框式匹配）' : (product.ports || '未记录');
+      const hardware = [product.architecture, product.controller, product.fabric, product.serviceBoard].filter(Boolean).join('；') || '未记录';
+      return `<strong>定位：</strong>${escapeHtml(product.subcategory || product.segment)}；<strong>形态：</strong>${escapeHtml(product.form || '未记录')}<br><strong>性能：</strong>${escapeHtml(capacity)}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}${slots}<br><strong>硬件：</strong>${escapeHtml(hardware)}`;
     }
     const rate = product.maxRate || '未记录';
     return `<strong>形态：</strong>${escapeHtml(product.form || '未记录')}；<strong>代际：</strong>${escapeHtml(product.generation || '未记录')}<br><strong>流数/速率：</strong>${escapeHtml(product.streams || product.streamText || '未记录')} / ${escapeHtml(rate)}<br><strong>端口：</strong>${escapeHtml(product.ports || '未记录')}`;
@@ -609,11 +708,40 @@
   refs.controllerSlots.addEventListener('input', syncChassisMode);
   refs.fabricSlots.addEventListener('input', syncChassisMode);
   refs.serviceSlots.addEventListener('input', syncChassisMode);
+  refs.routerChassis.addEventListener('change', syncRouterChassisMode);
+  refs.routerSegment.addEventListener('change', syncRouterChassisMode);
+  refs.routerControllerSlots.addEventListener('input', syncRouterChassisMode);
+  refs.routerFabricSlots.addEventListener('input', syncRouterChassisMode);
+  refs.routerServiceSlots.addEventListener('input', syncRouterChassisMode);
   refs.exampleButton.addEventListener('click', () => {
-    refs.tenderText.value = '园区接入交换机，要求不少于48个千兆电口和4个万兆SFP+光口，交换容量不低于672Gbps，包转发率不低于126Mpps，支持PoE+供电。';
-    refs.productLine.value = 'auto';
+    if (state.parsedLine === 'router' || refs.productLine.value === 'router') {
+      refs.tenderText.value = '框式核心汇聚路由器，交换容量不低于258Tbps，包转发率不低于54000Mpps，主控板不少于2块，交换网板不少于2块，业务板不少于8块。';
+      refs.productLine.value = 'router';
+    } else {
+      refs.tenderText.value = '园区接入交换机，要求不少于48个千兆电口和4个万兆SFP+光口，交换容量不低于672Gbps，包转发率不低于126Mpps，支持PoE+供电。';
+      refs.productLine.value = 'auto';
+    }
     parseTender();
   });
   refs.showMoreButton.addEventListener('click', () => { state.visible += 20; renderResults(); });
   refs.exportButton.addEventListener('click', exportCsv);
+  const requestedLine = new URLSearchParams(window.location.search).get('line');
+  const dedicatedMode = new URLSearchParams(window.location.search).get('dedicated') === '1';
+  if (['switch', 'wireless', 'router'].includes(requestedLine)) {
+    refs.productLine.value = requestedLine;
+    state.parsedLine = requestedLine;
+    showCriteria(requestedLine);
+    if (requestedLine === 'router') syncRouterChassisMode();
+    if (dedicatedMode) {
+      const titles = {
+        switch: ['新华三交换机选型助手', '交换机招标参数识别 · 性能与端口筛选 · 推荐型号对照'],
+        wireless: ['新华三无线产品选型助手', '无线招标参数识别 · AP与AC筛选 · 推荐型号对照'],
+        router: ['新华三路由器选型助手', '路由器招标参数识别 · 性能与板卡筛选 · 推荐型号对照'],
+      };
+      document.title = titles[requestedLine][0];
+      el('assistantTitle').textContent = titles[requestedLine][0];
+      el('assistantSubtitle').textContent = titles[requestedLine][1];
+      el('productLineControl').classList.add('hidden');
+    }
+  }
 })();

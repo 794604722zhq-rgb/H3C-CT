@@ -3,66 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="新华三产品智能选型助手入口，包含正式产品选型和小贝优选产品选型。">
-  <title>新华三产品智能选型助手</title>
+  <meta name="description" content="ZHQ产品选型工具统一入口。">
+  <title>ZHQ-选型工具</title>
   <link rel="stylesheet" href="assets/home.css">
 </head>
 <body>
   <header class="hero">
     <div class="hero-inner">
-      <span class="eyebrow">H3C PRODUCT SELECTOR</span>
-      <h1>新华三产品智能选型助手</h1>
-      <p>根据项目参数快速筛选候选型号，并查看产品参数、匹配判断及招标引导。</p>
+      <a class="xiaobei-switch" href="xiaobei-selector/">切换到小贝优选 <b>›</b></a>
+      <span class="eyebrow">ZHQ PRODUCT SELECTION HUB</span>
+      <h1>ZHQ-选型工具</h1>
+      <p>统一进入产品选型、招标参数匹配和产品数据库，减少文件查找与版本混用。</p>
     </div>
   </header>
-
   <main class="shell">
     <section class="intro">
-      <div>
-        <span class="section-label">选择数据范围</span>
-        <h2>进入对应的选型助手</h2>
-      </div>
-      <p>两个助手的数据来源和产品定位不同，请根据项目范围选择。</p>
+      <div><span class="section-label">智能选型</span><h2>选择需要使用的工具</h2></div>
+      <p>交换机、无线和路由器分别进入独立选型助手；小贝优选可通过右上角按钮切换。</p>
     </section>
-
-    <section class="assistant-grid" aria-label="选型助手列表">
-      <a class="assistant-card primary" href="h3c-selector/">
+    <section class="assistant-grid" aria-label="选型工具列表">
+      <a class="assistant-card primary" href="h3c-selector/?line=switch&amp;dedicated=1">
         <div class="card-number">01</div>
-        <div class="card-content">
-          <span class="card-kicker">正式产品库</span>
-          <h2>新华三智能选型助手</h2>
-          <p>覆盖交换机和无线产品，支持招标参数识别、性能筛选、端口与PoE判断、框式交换机板卡条件及招标引导。</p>
-          <ul>
-            <li>交换机与无线产品选型</li>
-            <li>招标引导、多选参数和一键复制</li>
-            <li>官网参数与国产化条件辅助判断</li>
-          </ul>
-        </div>
-        <span class="enter">进入助手 <b>›</b></span>
+        <div class="card-content"><span class="card-kicker">交换机产品库</span><h2>新华三交换机选型助手</h2><p>面向园区、数据中心、工业及框式交换机，按照招标参数快速匹配型号。</p><ul><li>交换容量、包转发率与端口匹配</li><li>PoE等级及框式板卡数量筛选</li><li>招标参数多选、拖动排序和复制</li></ul></div>
+        <span class="enter">进入交换机选型 <b>›</b></span>
       </a>
-
-      <a class="assistant-card" href="xiaobei-selector/">
+      <a class="assistant-card wireless" href="h3c-selector/?line=wireless&amp;dedicated=1">
         <div class="card-number">02</div>
-        <div class="card-content">
-          <span class="card-kicker">小贝优选</span>
-          <h2>小贝优选产品选型工具</h2>
-          <p>覆盖路由器、交换机、无线AP、安防网络和配件模块，支持价格条件及适配配件推荐。</p>
-          <ul>
-            <li>低端分销产品快速选型</li>
-            <li>价格作为同条件下的最终排序项</li>
-            <li>主设备与适配配件分开推荐</li>
-          </ul>
-        </div>
-        <span class="enter">进入助手 <b>›</b></span>
+        <div class="card-content"><span class="card-kicker">无线产品库</span><h2>新华三无线产品选型助手</h2><p>面向AC控制器和不同形态AP，按照无线代际、流数、速率及端口快速匹配。</p><ul><li>Wi-Fi 6与Wi-Fi 7产品筛选</li><li>AP形态、流数和整机速率识别</li><li>端口及PoE供电条件匹配</li></ul></div>
+        <span class="enter">进入无线选型 <b>›</b></span>
+      </a>
+      <a class="assistant-card router" href="h3c-selector/?line=router&amp;dedicated=1">
+        <div class="card-number">03</div>
+        <div class="card-content"><span class="card-kicker">路由器产品库</span><h2>新华三路由器智能选型</h2><p>直接进入路由器筛选，支持高端、框式、汇聚接入及中低端盒式路由器匹配。</p><ul><li>按照已确认产品范围分类</li><li>官网未公布容量不做硬性淘汰</li><li>性能、端口和板卡条件自动匹配</li></ul></div>
+        <span class="enter">进入路由器选型 <b>›</b></span>
       </a>
     </section>
-
-    <section class="notice">
-      <strong>使用提示</strong>
-      <p>本工具用于选型辅助，最终投标参数、价格和供货状态仍应以新华三最新官网资料及渠道政策为准。</p>
+    <section class="database-section" aria-labelledby="databaseTitle">
+      <div class="database-heading"><div><span class="section-label">产品数据库</span><h2 id="databaseTitle">网页查看最终版 Excel</h2></div><p>点击后直接进入网页表格，可切换工作表、搜索参数，也可在页面内下载原始 Excel。</p></div>
+      <div class="database-grid">
+        <a href="database-viewer/index.html?db=switch"><span>交换机</span><strong>新华三交换机产品选型工具</strong><small>网页查看 ›</small></a>
+        <a href="database-viewer/index.html?db=wireless"><span>无线</span><strong>新华三无线产品选型工具</strong><small>网页查看 ›</small></a>
+        <a href="database-viewer/index.html?db=router"><span>路由器</span><strong>新华三路由器产品选型工具</strong><small>网页查看 ›</small></a>
+      </div>
     </section>
+    <section class="notice"><strong>使用提示</strong><p>本工具用于选型辅助。最终投标参数、供货状态及价格仍应以新华三最新官网资料和渠道政策为准。</p></section>
   </main>
-
-  <footer>新华三产品智能选型助手 · GitHub Pages 静态版本</footer>
+  <footer>ZHQ-选型工具 · GitHub Pages 静态版本</footer>
 </body>
 </html>

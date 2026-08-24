@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新华三交换机招标引导</title>
+  <link rel="stylesheet" href="../shared/guide.css">
+</head>
+<body>
+  <header class="guide-topbar">
+    <div class="topbar-inner">
+      <a class="back-link" href="../../index.html">‹ 返回选型工具</a>
+      <span class="internal-badge">内部资料</span>
+      <h1 id="guideTitleTop">新华三交换机招标引导</h1>
+      <p id="guideSubtitle">汇总我司招标参数、选型说明及竞品对比内容。</p>
+    </div>
+  </header>
+
+  <main class="guide-shell">
+    <section class="summary-grid" aria-label="招标引导概览">
+      <article class="summary-card accent">
+        <span>适用型号</span>
+        <strong id="applicableModelsMain">—</strong>
+        <small id="applicableModelsSub">—</small>
+      </article>
+      <article class="summary-card">
+        <span>参数条目</span>
+        <strong id="totalRows">—</strong>
+        <small>完整招标引导内容</small>
+      </article>
+      <article class="summary-card">
+        <span>资料版本</span>
+        <strong id="guideVersion">—</strong>
+        <small>以页面所示版本为准</small>
+      </article>
+      <article class="summary-card">
+        <span>扩展字段</span>
+        <strong id="extendedFieldCount">—</strong>
+        <small>竞品与补充资料默认折叠</small>
+      </article>
+    </section>
+
+    <section class="guide-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">TENDER GUIDE</p>
+          <h2>招标参数明细</h2>
+          <p class="panel-description">先查看我司引导；需要对标时，可展开右侧竞品列。</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" class="secondary-button" id="printButton">打印页面</button>
+          <button type="button" class="primary-button" id="competitorToggle" aria-pressed="false">展开竞品及补充资料</button>
+        </div>
+      </div>
+
+      <div class="filters" aria-label="招标参数筛选">
+        <label class="search-field">
+          搜索参数
+          <input id="searchInput" type="search" placeholder="例如：国产化、400G、MACsec、交换网板">
+        </label>
+        <label>
+          参数类型
+          <select id="typeFilter"><option value="">全部类型</option></select>
+        </label>
+        <label>
+          指标分类
+          <select id="categoryFilter"><option value="">全部分类</option></select>
+        </label>
+      </div>
+
+      <div class="result-strip">
+        <span id="resultCount">正在加载…</span>
+        <span id="comparisonHint">当前仅显示我司招标参数</span>
+      </div>
+
+      <div class="selection-toolbar" aria-live="polite">
+        <div class="selection-status">
+          <span class="selection-number" id="selectedCount">0</span>
+          <span>条参数已选择</span>
+          <small>可跨搜索和筛选继续勾选</small>
+        </div>
+        <div class="selection-actions">
+          <button type="button" class="secondary-button" id="clearSelection" disabled>清空已选</button>
+          <button type="button" class="primary-button" id="generatePreview" disabled>生成参数预览</button>
+        </div>
+      </div>
+
+      <div class="table-wrap" tabindex="0" aria-label="招标引导数据表，可横向滚动">
+        <table id="guideTable">
+          <thead id="guideHead"></thead>
+          <tbody id="guideBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state hidden">没有符合当前条件的参数，请调整搜索或筛选条件。</div>
+      <p class="source-note" id="sourceNote"></p>
+    </section>
+
+    <section class="guide-panel preview-panel hidden" id="previewPanel" aria-labelledby="previewTitle">
+      <div class="panel-heading preview-heading">
+        <div>
+          <p class="eyebrow">PARAMETER PREVIEW</p>
+          <h2 id="previewTitle">最终招标参数预览</h2>
+          <p class="panel-description" id="previewSummary">根据已选内容按原表顺序生成。</p>
+        </div>
+        <div class="panel-actions">
+          <button type="button" class="secondary-button" id="backToSelection">返回继续选择</button>
+          <button type="button" class="primary-button" id="copyText">复制全部参数</button>
+        </div>
+      </div>
+
+      <div class="preview-stats" id="previewStats"></div>
+      <div class="preview-layout">
+        <div class="preview-list" id="previewList"></div>
+        <label class="final-text-label">
+          可直接使用的参数文本
+          <textarea id="finalText" rows="24" readonly></textarea>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="../shared/guide.js"></script>
+</body>
+</html>
