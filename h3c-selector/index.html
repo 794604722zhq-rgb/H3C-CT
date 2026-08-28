@@ -12,7 +12,10 @@
       <h1 id="assistantTitle">新华三智能选型助手</h1>
       <p id="assistantSubtitle">招标参数识别 · 硬性条件筛选 · 推荐型号对照</p>
     </div>
-    <div class="database-status" id="databaseStatus">正在加载产品数据库…</div>
+    <div class="topbar-actions">
+      <a class="home-button" href="../index.html">← 返回首页</a>
+      <div class="database-status" id="databaseStatus">正在加载产品数据库…</div>
+    </div>
   </header>
 
   <main class="app-shell">
@@ -49,12 +52,15 @@
       </div>
 
       <div id="switchCriteria" class="criteria-grid">
-        <label>网络位置<select id="switchSegment"><option value="">不限</option><option>数据中心交换机</option><option>园区网交换机</option><option>以太全光影终端</option><option>其他交换机</option><option>框式交换机</option></select></label>
+        <label>网络位置<select id="switchSegment"><option value="">不限</option><option>数据中心交换机</option><option>园区网交换机</option><option>以太全光影终端</option><option value="其他交换机">工业交换机</option><option>框式交换机</option></select></label>
         <label>产品定位<input id="switchRole" placeholder="如：接入、汇聚、核心、低时延"></label>
         <label>交换容量下限（Gbps）<input id="switchCapacity" type="number" min="0" step="0.01"></label>
         <label>包转发率下限（Mpps）<input id="switchForwarding" type="number" min="0" step="0.01"></label>
         <label>端口要求<input id="switchPorts" placeholder="如：48个千兆电口、4个万兆光口"></label>
         <label>PoE支持/等级<select id="switchPoeLevel"><option value="">不限</option><option value="any">支持 PoE（任意等级）</option><option value="plus">至少 PoE+（802.3at）</option><option value="plusplus">PoE++（802.3bt）</option><option value="none">不支持 PoE</option></select></label>
+        <label>最低整机PoE供电功率（W）<input id="switchPoePower" type="number" min="0" step="1" placeholder="如：370"></label>
+        <label class="checkbox-label"><input id="switchAllOptical" type="checkbox"> 选用以太全光/影终端方案</label>
+        <label class="checkbox-label"><input id="switchIndustrial" type="checkbox"> 选用工业交换机方案</label>
         <label class="checkbox-label"><input id="switchChassis" type="checkbox"> 必须为框式交换机</label>
         <label>主控板数量下限（框式）<input id="controllerSlots" type="number" min="0" step="1" placeholder="如：2"></label>
         <label>交换网板数量下限（框式）<input id="fabricSlots" type="number" min="0" step="1" placeholder="如：6"></label>

@@ -13,7 +13,7 @@
     results: el('results'), emptyState: el('emptyState'), resultCount: el('resultCount'), exportButton: el('exportButton'),
     showMoreButton: el('showMoreButton'), switchSegment: el('switchSegment'), switchRole: el('switchRole'),
     switchCapacity: el('switchCapacity'), switchForwarding: el('switchForwarding'), switchPorts: el('switchPorts'),
-    switchPoeLevel: el('switchPoeLevel'), switchChassis: el('switchChassis'), switchDomestic: el('switchDomestic'), wirelessType: el('wirelessType'),
+    switchPoeLevel: el('switchPoeLevel'), switchPoePower: el('switchPoePower'), switchAllOptical: el('switchAllOptical'), switchIndustrial: el('switchIndustrial'), switchChassis: el('switchChassis'), switchDomestic: el('switchDomestic'), wirelessType: el('wirelessType'),
     controllerSlots: el('controllerSlots'), fabricSlots: el('fabricSlots'), serviceSlots: el('serviceSlots'),
     wifiGeneration: el('wifiGeneration'), apForm: el('apForm'), apStreams: el('apStreams'), apRate: el('apRate'),
     wirelessPorts: el('wirelessPorts'), poeRequired: el('poeRequired'),
@@ -113,6 +113,17 @@
     if (/\bpoe\b|802\.3af|15\.4\s*w\s*(?:poe|供电)/i.test(source)) return 'any';
     return '';
   }
+  function switchPoePowerFromTender(source) {
+    const patterns = [
+      /(?:整机|总计|总)?\s*PoE\s*(?:供电|输出)?\s*(?:预算|功率)\s*(?:≥|>=|不少于|不低于|至少|为|达到|:)\s*(\d+(?:\.\d+)?)\s*W/i,
+      /(?:PoE功率预算|PoE供电预算)\s*(?:≥|>=|不少于|不低于|至少|为|达到|:)\s*(\d+(?:\.\d+)?)\s*W/i,
+    ];
+    for (const pattern of patterns) {
+      const match = source.match(pattern);
+      if (match) return Number(match[1]);
+    }
+    return '';
+  }
   function switchPoeRequirementText(value) {
     return { any: '支持 PoE（任意等级）', plus: '至少 PoE+（802.3at）', plusplus: 'PoE++（802.3bt）', none: '不支持 PoE' }[value] || '';
   }
@@ -145,20 +156,27 @@
       refs.fabricSlots.value = boardCountFromTender(source, 'fabric');
       refs.serviceSlots.value = boardCountFromTender(source, 'service');
       refs.switchPoeLevel.value = switchPoeFromTender(source);
+      refs.switchPoePower.value = switchPoePowerFromTender(source);
+      refs.switchAllOptical.checked = /全光|影终端/.test(source);
+      refs.switchIndustrial.checked = /工业交换机|工业以太网|工业级交换机/.test(source);
       refs.switchChassis.checked = /框式|机框式|模块化机箱/i.test(source) || Boolean(refs.controllerSlots.value || refs.fabricSlots.value || refs.serviceSlots.value);
       refs.switchPorts.value = refs.switchChassis.checked ? '' : extractPortPhrase(source);
       syncChassisMode();
       refs.switchDomestic.checked = /国产化|国产芯片|自主可控|信创/i.test(source);
       const role = ['低时延', '核心', '汇聚', '接入', '工业', '全光'].find(word => source.includes(word));
       refs.switchRole.value = role || '';
-      if (/数据中心/.test(source)) refs.switchSegment.value = '数据中心交换机';
+      if (/全光|影终端/.test(source)) refs.switchSegment.value = '以太全光影终端';
+      else if (/工业交换机|工业以太网|工业级交换机/.test(source)) refs.switchSegment.value = '其他交换机';
+      else if (/数据中心/.test(source)) refs.switchSegment.value = '数据中心交换机';
       else if (/园区/.test(source)) refs.switchSegment.value = '园区网交换机';
-      else if (/全光|影终端/.test(source)) refs.switchSegment.value = '以太全光影终端';
+      syncAllOpticalMode();
+      syncIndustrialMode();
       recognized.push('产品线：交换机');
       if (refs.switchCapacity.value) recognized.push(`交换容量 ≥ ${refs.switchCapacity.value} Gbps`);
       if (refs.switchForwarding.value) recognized.push(`包转发率 ≥ ${refs.switchForwarding.value} Mpps`);
       if (refs.switchPorts.value) recognized.push(`端口：${refs.switchPorts.value}`);
       if (refs.switchPoeLevel.value) recognized.push(`PoE：${switchPoeRequirementText(refs.switchPoeLevel.value)}`);
+      if (refs.switchPoePower.value) recognized.push(`整机PoE供电功率：≥${refs.switchPoePower.value}W`);
       if (refs.switchRole.value) recognized.push(`定位：${refs.switchRole.value}`);
       if (refs.switchChassis.checked) recognized.push('框式交换机');
       if (refs.controllerSlots.value) recognized.push(`主控板 ≥ ${refs.controllerSlots.value}`);
@@ -225,6 +243,16 @@
     refs.switchPorts.placeholder = chassisMode ? '框式交换机不参与端口匹配' : '如：48个千兆电口、4个万兆光口';
     if (chassisMode) refs.switchPorts.value = '';
   }
+  function syncAllOpticalMode() {
+    const option = Array.from(refs.switchSegment.options).find(item => item.value === '以太全光影终端');
+    if (option) option.disabled = !refs.switchAllOptical.checked;
+    if (!refs.switchAllOptical.checked && refs.switchSegment.value === '以太全光影终端') refs.switchSegment.value = '';
+  }
+  function syncIndustrialMode() {
+    const option = Array.from(refs.switchSegment.options).find(item => item.value === '其他交换机');
+    if (option) option.disabled = !refs.switchIndustrial.checked;
+    if (!refs.switchIndustrial.checked && refs.switchSegment.value === '其他交换机') refs.switchSegment.value = '';
+  }
 
   function syncRouterChassisMode() {
     const chassisMode = refs.routerChassis.checked || refs.routerSegment.value === '中低端框式路由器' || Boolean(refs.routerControllerSlots.value || refs.routerFabricSlots.value || refs.routerServiceSlots.value);
@@ -257,6 +285,21 @@
     if (/sfp|qsfp|光口/.test(value)) return 'optical';
     return '';
   }
+  function portConnector(source) {
+    const value = String(source || '').toLowerCase().replace(/＋/g, '+');
+    const match = value.match(/qsfp-dd|qsfpdd|qsfp56|qsfp28|qsfp\+|qsfp|sfp56|sfp28|sfp\+|sfp|rj45|base-?t/);
+    if (!match) return '';
+    return match[0].replace('qsfpdd', 'qsfp-dd').replace(/^base-?t$/, 'base-t');
+  }
+  function connectorMatches(requiredConnector, actualSource) {
+    const required = portConnector(requiredConnector);
+    if (!required) return true;
+    const actual = portConnector(actualSource);
+    if (!actual) return false;
+    if (required === 'rj45' || required === 'base-t') return actual === 'rj45' || actual === 'base-t';
+    if (required === 'qsfp') return actual.startsWith('qsfp');
+    return actual === required;
+  }
   function highestPortSpeedLabel(source) {
     const speeds = String(source || '').match(/(?:400|200|100|40|25|10|5|2\.5|1)\s*G(?:E)?/gi) || [];
     if (!speeds.length) return source;
@@ -268,6 +311,7 @@
     return String(value || '')
       .replace(/＋/g, '+')
       .replace(/\b1\s*GE\b/gi, '1G')
+      .replace(/1000\s*BASE-?X(?:\s*SFP)?/gi, '1G SFP')
       .replace(/((?:(?:400|200|100|40|25|10|5|2\.5|1)\s*G(?:E)?\s*[\/／]\s*)+(?:400|200|100|40|25|10|5|2\.5|1)\s*G(?:E)?)\s*(?:接口|端口)(?:数量|数)?\s*(?:≥|>=|不少于|不低于|至少)\s*(\d+)\s*(?:个|口)?/gi, (_, speedGroup, count) => `至少${count}个${highestPortSpeedLabel(speedGroup)}端口`)
       .replace(/100\s*\/\s*1000\s*\/\s*2500\s*(?:Mbps|Base-?T)?(?:自适应)?电口/gi, '2.5G电口')
       .replace(/10\s*\/\s*100\s*\/\s*1000\s*(?:Mbps|Base-?T)?(?:自适应)?电口/gi, '千兆电口')
@@ -278,10 +322,12 @@
     const source = normalizePortRequirement(value);
     const output = [];
     const connector = '(?:QSFP(?:-DD|DD|56|28|\\+)?|SFP(?:28|56|\\+)?|RJ45|BASE-T)';
-    const speed = '(?:400G|200G|100G|40G|25G|10G|5G|2\\.5G|1GE?|万兆|千兆|百兆)';
+    const speed = '(?:400GE?|200GE?|100GE?|40GE?|25GE?|10GE?|5GE?|2\\.5GE?|1GE?|万兆|千兆|百兆)';
     const patterns = [
       new RegExp(`(\\d+)\\s*(?:个|口)?\\s*(${speed})?\\s*(${connector})?\\s*(电口|光口|端口)`, 'gi'),
       new RegExp(`(\\d+)\\s*(?:个|口)?\\s*(${speed})?\\s*(${connector})`, 'gi'),
+      // 招标参数经常省略“端口/光口”后缀，例如“6个100G”。
+      new RegExp(`(\\d+)\\s*(?:个|口)?\\s*(${speed})`, 'gi'),
     ];
     for (const pattern of patterns) {
       let match;
@@ -298,7 +344,7 @@
         });
       }
     }
-    const implicitPattern = /(?:至少|不少于|不低于|≥|支持)?\s*(400G|200G|100G|40G|25G|10G|5G|2\.5G|1G|400GE|200GE|100GE|40GE|25GE|10GE|5GE|2\.5GE|1GE|万兆|千兆)\s*(QSFP(?:-DD|DD|56|28|\+)?|SFP(?:28|56|\+)?|RJ45|BASE-T)?\s*(?:端口|上联)?/gi;
+    const implicitPattern = /(?:至少|不少于|不低于|≥|支持)?\s*(400GE?|200GE?|100GE?|40GE?|25GE?|10GE?|5GE?|2\.5GE?|1GE?|万兆|千兆)\s*(QSFP(?:-DD|DD|56|28|\+)?|SFP(?:28|56|\+)?|RJ45|BASE-T)?\s*(?:端口|上联)?/gi;
     let implicit;
     while ((implicit = implicitPattern.exec(source)) !== null) {
       if (output.some(item => implicit.index >= item.index && implicit.index < item.index + item.label.length)) continue;
@@ -375,9 +421,7 @@
       const candidates = actualPorts.filter(actual => {
         if (required.medium && actual.medium && actual.medium !== 'both' && actual.medium !== required.medium) return false;
         if (required.speed !== null && (required.speed === 1 ? actual.speed !== 1 : actual.speed < required.speed)) return false;
-        if (required.connector.includes('sfp+') && !actual.text.includes('sfp+')) return false;
-        if (required.connector.includes('sfp28') && !actual.text.includes('sfp28')) return false;
-        if (required.connector.includes('qsfp') && !actual.text.includes('qsfp')) return false;
+        if (!connectorMatches(required.connector, actual.text)) return false;
         return true;
       });
       const available = candidates.reduce((sum, item) => sum + item.count, 0);
@@ -400,9 +444,7 @@
       const available = actualPorts.filter(actual => {
         if (required.medium && actual.medium && actual.medium !== 'both' && actual.medium !== required.medium) return false;
         if (required.speed !== null && (required.speed === 1 ? actual.speed !== 1 : actual.speed < required.speed)) return false;
-        if (required.connector.includes('sfp+') && !actual.text.includes('sfp+')) return false;
-        if (required.connector.includes('sfp28') && !actual.text.includes('sfp28')) return false;
-        if (required.connector.includes('qsfp') && !actual.text.includes('qsfp')) return false;
+        if (!connectorMatches(required.connector, actual.text)) return false;
         return true;
       }).reduce((sum, item) => sum + item.count, 0);
       return sum + Math.min(required.count, available) / Math.max(required.count, available, 1);
@@ -434,6 +476,9 @@
       segment: refs.switchSegment.value, role: refs.switchRole.value.trim(), capacity: Number(refs.switchCapacity.value) || 0,
       forwarding: Number(refs.switchForwarding.value) || 0, ports: refs.switchPorts.value.trim(),
       poe: refs.switchPoeLevel.value,
+      poePower: Number(refs.switchPoePower.value) || 0,
+      allowAllOptical: refs.switchAllOptical.checked,
+      allowIndustrial: refs.switchIndustrial.checked,
       chassis: refs.switchChassis.checked || refs.switchSegment.value === '框式交换机' || Boolean(controllerSlots || fabricSlots || serviceSlots),
       controllerSlots, fabricSlots, serviceSlots, domestic: refs.switchDomestic.checked,
     };
@@ -468,6 +513,7 @@
     if (req.forwarding) checks.push(compareMinimum([product.forwardingMax, product.forwardingMin], req.forwarding, forwardingMpps, '包转发率'));
     if (req.ports && !req.chassis) checks.push(matchPorts(product, req.ports));
     if (req.poe) checks.push(matchSwitchPoe(product, req.poe));
+    if (req.poePower) checks.push(compareMinimum([product.poePower], req.poePower, value => Number.isFinite(Number(value)) ? Number(value) : null, '整机PoE供电功率'));
     if (req.chassis) checks.push(isChassis(product) ? { status: 'pass', label: '框式设备', detail: '具备框式硬件信息' } : { status: 'fail', label: '框式设备', detail: '未检出框式硬件信息' });
     if (req.controllerSlots) checks.push(compareSlotCount(product.controllerSlots, req.controllerSlots, '主控板数量'));
     if (req.fabricSlots) checks.push(compareSlotCount(product.fabricSlots, req.fabricSlots, '交换网板数量'));
@@ -606,8 +652,10 @@
   function matchProducts() {
     const line = state.parsedLine || (refs.productLine.value === 'wireless' ? 'wireless' : refs.productLine.value === 'router' ? 'router' : 'switch');
     const lineLabel = line === 'wireless' ? '无线' : line === 'router' ? '路由器' : '交换机';
-    const products = data.products.filter(product => product.line === lineLabel);
     const req = line === 'wireless' ? wirelessRequirements() : line === 'router' ? routerRequirements() : switchRequirements();
+    const products = data.products.filter(product => product.line === lineLabel
+      && (line !== 'switch' || req.allowAllOptical || product.segment !== '以太全光影终端')
+      && (line !== 'switch' || req.allowIndustrial || product.segment !== '其他交换机'));
     state.results = products.map(product => line === 'wireless' ? evaluateWireless(product, req) : line === 'router' ? evaluateRouter(product, req) : evaluateSwitch(product, req));
     state.results.sort((a, b) => {
       const order = { pass: 0, review: 1, fail: 2 };
@@ -655,7 +703,9 @@
       const slots = isChassis(product) ? `<br><strong>板卡槽位：</strong>主控 ${escapeHtml(product.controllerSlots ?? '未明确')} / 网板 ${escapeHtml(product.fabricSlots ?? '未明确')} / 业务板 ${escapeHtml(product.serviceSlots ?? '未明确')}` : '';
       const expansionOptions = isChassis(product) ? '' : expansionOptionsSummary(product);
       const portText = isChassis(product) ? '按业务板配置（不参与框式匹配）' : (product.ports || '未记录');
-      return `<strong>性能：</strong>${escapeHtml(product.switchingMin || '—')} / ${escapeHtml(product.switchingMax || '—')}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}${expansionOptions}<br><strong>PoE：</strong>${escapeHtml(product.poeLevel || '未记录')}${slots}<br><strong>架构：</strong>${escapeHtml(product.architecture || '未记录')}`;
+      const poeProfile = switchPoeProfile(product.poeLevel);
+      const poePower = poeProfile.supported === false ? '不适用' : Number.isFinite(Number(product.poePower)) && Number(product.poePower) > 0 ? `${Number(product.poePower)}W` : '待核对';
+      return `<strong>性能：</strong>${escapeHtml(product.switchingMin || '—')} / ${escapeHtml(product.switchingMax || '—')}；${escapeHtml(product.forwardingMin || '—')} / ${escapeHtml(product.forwardingMax || '—')}<br><strong>端口：</strong>${escapeHtml(portText)}${expansionOptions}<br><strong>PoE：</strong>${escapeHtml(product.poeLevel || '未记录')}；<strong>整机供电功率：</strong>${escapeHtml(poePower)}${slots}<br><strong>架构：</strong>${escapeHtml(product.architecture || '未记录')}`;
     }
     if (product.line === '路由器') {
       const slots = product.chassis ? `<br><strong>板卡槽位：</strong>主控 ${escapeHtml(product.controllerSlots ?? '未明确')} / 网板 ${escapeHtml(product.fabricSlots ?? '未明确')} / 业务板/线卡 ${escapeHtml(product.serviceSlots ?? '未明确')}` : '';
@@ -681,10 +731,10 @@
     refs.showMoreButton.classList.toggle('hidden', state.visible >= state.results.length);
   }
   function exportCsv() {
-    const rows = [['状态', '匹配度', '产品线', '分类', '产品系列/形态', '产品型号', 'PoE支持/等级', '主控板数量', '交换网板数量', '业务板数量', '判断明细', '官网链接']];
+    const rows = [['状态', '匹配度', '产品线', '分类', '产品系列/形态', '产品型号', 'PoE支持/等级', 'PoE供电功率（W）', '主控板数量', '交换网板数量', '业务板数量', '判断明细', '官网链接']];
     for (const item of state.results.filter(item => item.status !== 'fail').slice(0, 100)) {
       const p = item.product;
-      rows.push([statusText(item.status), item.score, p.line, p.segment, p.series || p.form || p.type, p.model, p.poeLevel || p.poe || '', p.controllerSlots ?? '', p.fabricSlots ?? '', p.serviceSlots ?? '', item.checks.map(x => `${x.label}:${x.detail}`).join('；'), p.url || '']);
+      rows.push([statusText(item.status), item.score, p.line, p.segment, p.series || p.form || p.type, p.model, p.poeLevel || p.poe || '', p.poePower ?? '', p.controllerSlots ?? '', p.fabricSlots ?? '', p.serviceSlots ?? '', item.checks.map(x => `${x.label}:${x.detail}`).join('；'), p.url || '']);
     }
     const csv = '\uFEFF' + rows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -704,6 +754,8 @@
     }
   });
   refs.switchChassis.addEventListener('change', syncChassisMode);
+  refs.switchAllOptical.addEventListener('change', syncAllOpticalMode);
+  refs.switchIndustrial.addEventListener('change', syncIndustrialMode);
   refs.switchSegment.addEventListener('change', syncChassisMode);
   refs.controllerSlots.addEventListener('input', syncChassisMode);
   refs.fabricSlots.addEventListener('input', syncChassisMode);
@@ -744,4 +796,6 @@
       el('productLineControl').classList.add('hidden');
     }
   }
+  syncAllOpticalMode();
+  syncIndustrialMode();
 })();
