@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#173f5f">
+  <title>ZHQ-选型工具｜手机离线版</title>
+  <style>
+    :root { --navy:#173f5f; --teal:#1f6f78; --bg:#f2f6f8; --line:#d5e1e6; --text:#263a47; --muted:#607783; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; }
+    header { padding:max(34px,env(safe-area-inset-top)) 20px 30px; color:#fff; background:linear-gradient(135deg,#0f314c,#1f6f78); }
+    header span { font-size:12px; letter-spacing:.12em; color:#c9e2e6; }
+    h1 { margin:9px 0 8px; font-size:30px; }
+    header p { margin:0; max-width:620px; color:#dbecef; line-height:1.7; font-size:14px; }
+    main { max-width:760px; margin:0 auto; padding:20px 16px max(28px,env(safe-area-inset-bottom)); }
+    .tip { margin-bottom:14px; padding:12px 14px; border-left:4px solid var(--teal); border-radius:7px; background:#fff; color:var(--muted); font-size:13px; line-height:1.65; }
+    .cards { display:grid; gap:14px; }
+    .card { display:block; padding:20px; border:1px solid var(--line); border-radius:12px; background:#fff; color:inherit; text-decoration:none; box-shadow:0 7px 22px rgba(23,63,95,.07); }
+    .card:active { transform:scale(.99); }
+    .badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#e8f3f4; color:#17606a; font-size:11px; font-weight:700; }
+    .card h2 { margin:12px 0 8px; color:var(--navy); font-size:21px; }
+    .card p { margin:0; color:var(--muted); line-height:1.7; font-size:14px; }
+    .enter { display:block; margin-top:16px; color:var(--teal); font-weight:700; }
+    .online { margin-top:20px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; line-height:1.7; }
+    .online a { color:#12618a; }
+  </style>
+</head>
+<body>
+  <header>
+    <span>ZHQ MOBILE OFFLINE EDITION</span>
+    <h1>ZHQ-选型工具</h1>
+    <p>手机离线便携版。核心程序、样式和产品数据已经嵌入页面，不依赖同级 assets 或 data 文件夹。</p>
+  </header>
+  <main>
+    <div class="tip">请先完整解压文件夹，再点击本页。新华三助手和小贝助手本身都是单个 HTML 文件，也可以单独发送。</div>
+    <div class="cards">
+      <a class="card" href="新华三产品选型助手-手机离线版.html">
+        <span class="badge">正式产品</span>
+        <h2>新华三产品选型助手</h2>
+        <p>交换机、无线、路由器共用一个入口，支持参数识别、筛选和推荐。</p>
+        <span class="enter">打开助手 ›</span>
+      </a>
+      <a class="card" href="小贝优选产品选型工具-手机离线版.html">
+        <span class="badge">小贝优选</span>
+        <h2>小贝优选产品选型工具</h2>
+        <p>读取内嵌的小贝产品数据库，可离线完成参数识别和产品匹配。</p>
+        <span class="enter">打开助手 ›</span>
+      </a>
+    </div>
+    <div class="online">招标引导、官网参数和完整数据库查看需要联网。联网时也可使用 <a href="https://794604722zhq-rgb.github.io/H3C-CT/">GitHub 在线版</a>。</div>
+  </main>
+</body>
+</html>

@@ -4,6 +4,8 @@
 
 - `h3c-selector/`：新华三正式交换机、无线与路由器产品选型助手，包含招标引导功能。
 - `xiaobei-selector/`：小贝优选分销产品选型工具。
+- `mobile-offline/`：可直接复制到手机的离线便携版；核心程序、样式和数据已嵌入单文件助手。
+- `portable/ZHQ-选型工具-电脑单文件版.html`：可直接外发的电脑单文件版，包含三个正式助手和小贝优选。
 
 ## 在线使用
 
@@ -23,6 +25,14 @@ git clone https://github.com/794604722zhq-rgb/H3C-CT.git
 ```
 
 克隆完成后打开 `H3C-CT/index.html`。详细的目录说明、匹配规则和新账号接续方式见 [继续维护说明](docs/继续维护说明.md)。
+
+## 手机离线使用
+
+将 `mobile-offline/` 文件夹复制到手机并完整解压，打开其中的 `index.html`。也可以单独发送该目录中的“新华三产品选型助手-手机离线版.html”或“小贝优选产品选型工具-手机离线版.html”。Android 建议使用 Chrome、Edge 或系统浏览器；iPhone/iPad 的“文件”预览若限制 JavaScript，请使用支持本地 HTML 的文件管理应用，或直接使用在线版。
+
+## 电脑单文件外发
+
+只需发送 `portable/ZHQ-选型工具-电脑单文件版.html`。接收方双击即可打开统一入口，不需要同时发送 `assets`、`data` 或其他文件夹。核心选型离线可用；招标引导、官网参数和网页数据库仍需联网。
 
 ## 发布到 GitHub Pages
 
