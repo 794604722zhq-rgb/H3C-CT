@@ -44,7 +44,7 @@
     const text = String(value ?? '');
     if (/^https?:\/\//i.test(text)) return `<a class="source-link" href="${escapeHtml(text)}" target="_blank" rel="noopener">查看来源</a>`;
     const guide = /型号/.test(header) ? guideInfo(text) : null;
-    return `${escapeHtml(text)}${guide ? `<a class="guide-link" href="../guides/${guide.slug}/index.html">招标引导</a>` : ''}`;
+    return `${escapeHtml(text)}${guide ? `<a class="guide-link" href="../h3c-selector/guides/${guide.slug}/index.html">招标引导</a>` : ''}`;
   }
 
   function headerIndex(headers, patterns) {
